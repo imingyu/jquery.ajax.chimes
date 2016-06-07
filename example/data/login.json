@@ -1,0 +1,9 @@
+{
+    "success":true,
+    "result":{
+        "id":1301,
+        "name":"Tom",
+        "username":"tom@163.com",
+        "birthday":"1992-3-6"
+    }
+}

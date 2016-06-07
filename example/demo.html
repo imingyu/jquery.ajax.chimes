@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Document</title>
+</head>
+<body>
+    
+    <button type="button">ajax</button>
+    
+    <script src="http://cdn.bootcss.com/jquery/1.12.3/jquery.js"></script>
+    <script src="../src/chimes.core.js"></script>
+    <script>
+        var LoadingChime = $.AjaxChimers.createChime({
+            name:"Loading",
+            getDefaultOptions:function(){
+                return {
+                    text:"哈哈哈",
+                    box:"123"
+                };
+            },
+            install:function(){
+                var ops=this.options;
+                alert(ops.box);
+            },
+            run:function(){
+                var ops=this.options;
+                alert(ops.text);
+            }
+        });
+
+        $("button").click(function(){
+            $.ajax({
+                type:"GET",
+                url:"data/login.json",
+                beforeSend:function(){
+                    return false;
+                },
+                chimers:{
+                    Loading:{
+                        text:"加载中..."
+                    }
+                }
+            }).done(function(data){
+                alert(JSON.stringify(data));
+            }).complete(function(){
+                alert("complete");
+            });
+        });
+    </script>
+</body>
+</html>
