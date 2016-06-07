@@ -1,4 +1,4 @@
-(function (factory) {
+;(function (factory) {
     'use strict';
 
     if (typeof module === 'object' && typeof module.exports === 'object') {
@@ -57,7 +57,9 @@
             if(installed) return false;
             var spec = this.spec;
             installed=true;
-            return spec.install.apply(this, arraySlice.call(arguments));
+            if(typeof spec.install==="function"){
+                return spec.install.apply(this, arraySlice.call(arguments));
+            }
         },
         this.uninstall= function () {
             if (!this.isEnabled()) return false;
@@ -70,23 +72,24 @@
             delete this.__ajaxOptions;
             delete this.__orgAjaxOptions;
             var spec = this.spec;
-            return spec.uninstall.apply(this, arraySlice.call(arguments));
+            if(typeof spec.uninstall==="function"){
+                return spec.uninstall.apply(this, arraySlice.call(arguments));
+            }
         },
         this.destroy= function () {
             if(destroyed) return false;
             destroyed=true;
             var spec = this.spec;
-            spec.destroy.apply(this, arraySlice.call(arguments));
+            if(typeof spec.destroy==="function"){
+                spec.destroy.apply(this, arraySlice.call(arguments));
+            }
             delete this.spec;
             delete this.options;
             delete this.__xhr;
             delete this.__ajaxOptions;
             delete this.__orgAjaxOptions;
         }
-    }
-    Chime.prototype = {
-        constructor: Chime,
-        run: function () {
+        this.run= function () {
             if (!this.isEnabled()){
                 console.warn("风铃："+this.name+"已被禁用！");
                 return false;
@@ -110,12 +113,11 @@
             });
             return result;
         }
-    };
+    }
 
-
-    var AjaxChimers = {};
-    AjaxChimers.enabled = true;//是否启用风铃系统，说明此处可以集中控制，关闭后，设置的所有风铃将无效
-    AjaxChimers.createChime = function (spec) {
+    var AjaxChimes = {};
+    AjaxChimes.enabled = true;//是否启用风铃系统，说明此处可以集中控制，关闭后，设置的所有风铃将无效
+    AjaxChimes.createChime = function (spec) {
         var Constructor = function (chimeOptions, xhr, ajaxOptions, orgAjaxOptions) {
             this.__xhr = this.__xhr || xhr;
             this.__ajaxOptions = this.__ajaxOptions || ajaxOptions;
@@ -149,49 +151,49 @@
         if (spec.getDefaultOptions) {
             Constructor.defaultOptions = spec.getDefaultOptions();
         }
-        AjaxChimers[spec.name] = Constructor;
+        AjaxChimes[spec.name] = Constructor;
         return Constructor;
     };
-    AjaxChimers.destroyChime = function (chimeName, chimeId) {
-        var chime = AjaxChimers[chimeName];
+    AjaxChimes.destroyChime = function (chimeName, chimeId) {
+        var chime = AjaxChimes[chimeName];
         if (chime && chime.instances[chimeId]) {
             chime.instances[chimeId].destroy();
             delete chime.instances[chimeId];
         }
     };
-    AjaxChimers.enableChime = function (chimeName) {
-        var chime = AjaxChimers[chimeName];
+    AjaxChimes.enableChime = function (chimeName) {
+        var chime = AjaxChimes[chimeName];
         if (chime && chime.enable) {
             chime.enable();
         }
     };
-    AjaxChimers.disableChime = function (chimeName) {
-        var chime = AjaxChimers[chimeName];
+    AjaxChimes.disableChime = function (chimeName) {
+        var chime = AjaxChimes[chimeName];
         if (chime && chime.disable) {
             chime.disable();
         }
     };
-    AjaxChimers.setChimeDefaultOptions = function (chimeName, options) {
-        var chime = AjaxChimers[chimeName];
+    AjaxChimes.setChimeDefaultOptions = function (chimeName, options) {
+        var chime = AjaxChimes[chimeName];
         chime.defaultOptions = chime.defaultOptions || {};
         $.extend(true, chime.defaultOptions, options);
     };
-    $.AjaxChimers = AjaxChimers;
+    $.AjaxChimes = AjaxChimes;
 
     //风铃的安装与运行
     $.ajaxPrefilter(function (ops, orgOps, jqXhr) {
         //如果存在配置风铃，并且是启用了风铃系统
-        if (ops.chimers && $.AjaxChimers.enabled !== false && ops.chimers.enabled !== false) {
+        if (ops.chimes && $.AjaxChimes.enabled !== false && ops.chimes.enabled !== false) {
             var beforeSendHandles = [],//定义一个beforeSend队列，保存所有的beforeSend事件
                 ajaxBeforeSend = ops.beforeSend,//如果当前ajax请求配置了此设置（占据第一项beforeSend）
-                ajaxChimers = {};//已经在此ajax上的风铃实例
+                ajaxChimes = {};//已经在此ajax上的风铃实例
 
-            ops.chimeInstances = jqXhr.chimeInstances = ajaxChimers;//将风铃实例集合放置在ajax对象上
+            ops.chimeInstances = jqXhr.chimeInstances = ajaxChimes;//将风铃实例集合放置在ajax对象上
             ops.beforeSend = null;
 
-            for (var chimeName in ops.chimers) {
-                var chime = $.AjaxChimers[chimeName],
-                    chimeOptions = ops.chimers[chimeName];
+            for (var chimeName in ops.chimes) {
+                var chime = $.AjaxChimes[chimeName],
+                    chimeOptions = ops.chimes[chimeName];
                 if (chime) {
                     var chimeInc = new chime(chimeOptions, jqXhr, ops, orgOps);
                     chimeInc.install();
@@ -203,7 +205,7 @@
                         ops.beforeSend = null;
                     }
                     //缓存实例
-                    ajaxChimers[chimeName] = chimeInc;
+                    ajaxChimes[chimeName] = chimeInc;
                     chime.instances[chimeInc.id] = chimeInc;
                 } else {
                     console.warn(pid + "挂件不存在或不可用");
@@ -216,7 +218,7 @@
             ops.beforeSend = function (jqXhr, ops) {
                 if (typeof ajaxBeforeSend === "function") {
                     //获取occupyFirstBeforeSend设置项，这项配置觉得ajax本身的beforeSend事件在何处（所有风铃之后或之前）执行，这有利于在beforeSendh中禁用某些风铃
-                    if (ops.chimers.occupyFirstBeforeSend === true) {
+                    if (ops.chimes.occupyFirstBeforeSend === true) {
                         var result = ajaxBeforeSend.apply(ops, [jqXhr, ops]);
                         if (result != false) {
                             beforeSendCallBacks.fireWith(ops, [jqXhr, ops]);

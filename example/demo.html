@@ -11,7 +11,7 @@
     <script src="http://cdn.bootcss.com/jquery/1.12.3/jquery.js"></script>
     <script src="../src/chimes.core.js"></script>
     <script>
-        var LoadingChime = $.AjaxChimers.createChime({
+        var LoadingChime = $.AjaxChimes.createChime({
             name:"Loading",
             getDefaultOptions:function(){
                 return {
@@ -34,9 +34,9 @@
                 type:"GET",
                 url:"data/login.json",
                 beforeSend:function(){
-                    return false;
+                    return true;
                 },
-                chimers:{
+                chimes:{
                     Loading:{
                         text:"加载中..."
                     }
