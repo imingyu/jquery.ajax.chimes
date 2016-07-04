@@ -55,6 +55,7 @@
         this.install= function () {
             if (!this.isEnabled()) return false;
             if(installed) return false;
+            if(!this.constructor.enabled) return false;
             var spec = this.spec;
             installed=true;
             if(typeof spec.install==="function"){
@@ -83,14 +84,17 @@
             if(typeof spec.destroy==="function"){
                 spec.destroy.apply(this, arraySlice.call(arguments));
             }
+            //delete this.___xhr.chimeInstances[this.id];
+            //delete this.__ajaxOptions.chimeInstances[this.id];
             delete this.spec;
             delete this.options;
             delete this.__xhr;
             delete this.__ajaxOptions;
             delete this.__orgAjaxOptions;
+            AjaxChimes.destroyChime(this.name,this.id);
         }
         this.run= function () {
-            if (!this.isEnabled()){
+            if (!this.isEnabled() || !this.constructor.enabled){
                 console.warn("风铃："+this.name+"已被禁用！");
                 return false;
             }
@@ -103,7 +107,7 @@
                 return false;
             }
             var spec = this.spec;
-            var result = spec.run.apply(this, arraySlice.call(arguments));
+            
             
             //在xhr上执行完成的回调，执行本身的销毁事件
             var self=this;
@@ -111,7 +115,11 @@
                 self.destroy();
                 self = null;
             });
-            return result;
+
+            if(typeof spec.run=="function"){
+                var result = spec.run.apply(this, arraySlice.call(arguments));
+                return result;
+            }
         }
     }
 
@@ -119,14 +127,21 @@
     AjaxChimes.enabled = true;//是否启用风铃系统，说明此处可以集中控制，关闭后，设置的所有风铃将无效
     AjaxChimes.createChime = function (spec) {
         var Constructor = function (chimeOptions, xhr, ajaxOptions, orgAjaxOptions) {
-            this.__xhr = this.__xhr || xhr;
-            this.__ajaxOptions = this.__ajaxOptions || ajaxOptions;
-            this.__orgAjaxOptions = this.__orgAjaxOptions || orgAjaxOptions;
-            this.options = this.options || $.extend(true, {}, Constructor.defaultOptions, chimeOptions);
+            $.extend(spec,{
+                ajaxOptions:ajaxOptions,
+                xhr:xhr,
+                orgAjaxOptions:orgAjaxOptions,
+                options:$.extend(true, {}, Constructor.defaultOptions, chimeOptions)
+            });
+            Chime.apply(this,[spec]);
+            for(var key in spec){
+                if(!this.hasOwnProperty(key)){
+                    this[key]=spec[key];
+                }
+            }
+            this.constructor=Constructor;
         };
-        
         Constructor.instances = {};//已经实例化的风铃
-        Constructor.prototype = new Chime(spec);
         Constructor.prototype.constructor = Constructor;
         
         Constructor.enabled=true;
@@ -178,7 +193,6 @@
         chime.defaultOptions = chime.defaultOptions || {};
         $.extend(true, chime.defaultOptions, options);
     };
-    $.AjaxChimes = AjaxChimes;
 
     //风铃的安装与运行
     $.ajaxPrefilter(function (ops, orgOps, jqXhr) {
@@ -235,4 +249,9 @@
             };
         }
     });
+
+    $.AjaxChimes = AjaxChimes;
+    if(typeof module !=="undefined" && typeof module.exports=="object"){
+        module.exports = AjaxChimes;
+    }
 }));

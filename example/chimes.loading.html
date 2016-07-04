@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Document</title>
+    <link rel="stylesheet" href="../node_modules/jquery.mloading.js/src/jquery.mloading.css">
+</head>
+<body>
+    
+    <button type="button" class="btn-test">测试Loading效果：获取天气</button>
+    <p>注意：代码中并没有在ajax发送前和发送结束后手动的调用loading插件，而是在ajax的配置项中简单的配置下就可以达到效果</p>
+    
+    <button type="button" class="btn-disable">禁用Loading 风铃</button>
+    <button type="button" class="btn-enable">启用Loading 风铃</button>
+
+    <script src="http://cdn.bootcss.com/jquery/1.12.3/jquery.js"></script>
+    <script src="../src/chimes.core.js"></script>
+    <script src="../node_modules/jquery.mloading.js/src/jquery.mloading.js"></script>
+    <script src="../src/chimes.loading.js"></script>
+    <script>
+        $(".btn-test").click(function(){
+            $.ajax({
+                type:"GET",
+                url:"http://m.weather.com.cn/data/101010100.html",
+                chimes:{
+                    Loading:{
+                        element:"body",
+                        text:"获取天气中..."
+                    }
+                }
+            }).done(function(data){
+                alert("正确执行");
+            }).fail(function(){
+                alert("跨域不允许访问");
+            }).complete(function(){
+                alert("ajax完成");
+            });
+        });
+        $(".btn-disable").click(function(){
+            $.AjaxChimes.Loading.disable();
+        });
+        $(".btn-enable").click(function(){
+            $.AjaxChimes.Loading.enable();
+        });
+    </script>
+</body>
+</html>
