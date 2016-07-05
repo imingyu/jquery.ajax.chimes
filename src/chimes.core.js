@@ -31,12 +31,6 @@
         this.__orgAjaxOptions = spec.orgAjaxOptions;
         this.options = spec.options;
 
-        for(var key in spec){
-            if(!this.hasOwnProperty(key)){
-                this[key]=spec[key];
-            }
-        }
-
         var __enabled = true,
             installed=false,
             uninstalled=false,
@@ -132,6 +126,12 @@
                 options:$.extend(true, {}, Constructor.defaultOptions, chimeOptions)
             });
             Chime.apply(this,[spec]);
+
+            for(var key in spec){
+                if(!this.hasOwnProperty(key)){
+                    this[key]=spec[key];
+                }
+            }
             
             this.constructor=Constructor;
         };
