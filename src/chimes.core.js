@@ -31,6 +31,12 @@
         this.__orgAjaxOptions = spec.orgAjaxOptions;
         this.options = spec.options;
 
+        for(var key in spec){
+            if(!this.hasOwnProperty(key)){
+                this[key]=spec[key];
+            }
+        }
+
         var __enabled = true,
             installed=false,
             uninstalled=false,
@@ -108,14 +114,6 @@
             }
             var spec = this.spec;
             
-            
-            //在xhr上执行完成的回调，执行本身的销毁事件
-            var self=this;
-            this.__xhr.always(function(){
-                self.destroy();
-                self = null;
-            });
-
             if(typeof spec.run=="function"){
                 var result = spec.run.apply(this, arraySlice.call(arguments));
                 return result;
@@ -134,11 +132,7 @@
                 options:$.extend(true, {}, Constructor.defaultOptions, chimeOptions)
             });
             Chime.apply(this,[spec]);
-            for(var key in spec){
-                if(!this.hasOwnProperty(key)){
-                    this[key]=spec[key];
-                }
-            }
+            
             this.constructor=Constructor;
         };
         Constructor.instances = {};//已经实例化的风铃
@@ -171,8 +165,7 @@
     };
     AjaxChimes.destroyChime = function (chimeName, chimeId) {
         var chime = AjaxChimes[chimeName];
-        if (chime && chime.instances[chimeId]) {
-            chime.instances[chimeId].destroy();
+        if(chime && chime.instances[chimeId]){
             delete chime.instances[chimeId];
         }
     };
@@ -193,36 +186,142 @@
         chime.defaultOptions = chime.defaultOptions || {};
         $.extend(true, chime.defaultOptions, options);
     };
+    AjaxChimes.domAttrPrefix={
+        key:"chimes-key",
+        detail:"chimes"
+    };
+    AjaxChimes.convertToCamelCase = function(str){
+        return str.replace("//-(/w)/g", function(all, letter){
+          return letter.toUpperCase();
+        });
+    };
+    AjaxChimes.transitionAttrToChimeOptions = function(dom){
+        var result={},
+            attrValue=dom.attr("data-"+AjaxChimes.domAttrPrefix.detail),
+            domChimesOptions=AjaxChimes.parseJSON(attrValue);
+        if(domChimesOptions){
+            if($.isArray(domChimesOptions)){
+                $.each(domChimesOptions,function(j, jtem){
+                    if(jtem.hasOwnProperty("name")){
+                        var chime = $.AjaxChimes[jtem.name];
+                        result[jtem.name]=chime.transitionOptions(dom,jtem);
+                    }
+                });
+            }else{
+                if(domChimesOptions.hasOwnProperty("name")){
+                    var chime = $.AjaxChimes[domChimesOptions.name];
+                    if(chime.hasOwnProperty("transitionOptions")){
+                        //风铃定义了options转换函数
+                        result[domChimesOptions.name]=chime.transitionOptions(dom,domChimesOptions);
+                    }else{
+                        //未定转换函数，则默认吧dom传给element配置项，其他数据原样传递
+                        result[domChimesOptions.name]=domChimesOptions;
+                        result[domChimesOptions.name].element=dom;
+                    }
+                }
+            }
+        }
+        return result;
+    };
+    AjaxChimes.parseJSON=function(str){
+        if(!str) return null;
+        try{
+            if(JSON){
+                return JSON.parse(str);
+            }else{
+                return $.parse(str);
+            }
+        }catch(ex){
+            return eval('(' + str + ')');
+        }
+    };
 
     //风铃的安装与运行
     $.ajaxPrefilter(function (ops, orgOps, jqXhr) {
         //如果存在配置风铃，并且是启用了风铃系统
         if (ops.chimes && $.AjaxChimes.enabled !== false && ops.chimes.enabled !== false) {
-            var beforeSendHandles = [],//定义一个beforeSend队列，保存所有的beforeSend事件
+            var needInstallChimes={},//本次ajax需要安装的风铃key列表
+                beforeSendHandles = [],//定义一个beforeSend队列，保存所有的beforeSend事件
                 ajaxBeforeSend = ops.beforeSend,//如果当前ajax请求配置了此设置（占据第一项beforeSend）
                 ajaxChimes = {};//已经在此ajax上的风铃实例
+
+            needInstallChimes=$.extend(needInstallChimes,ops.chimes);//从配置得到风铃列表
+            /*
+             * 从dom中得到风铃列表
+             * 规则：
+             * 1.查找contextElement下的所有没有指定key的dom；
+             * 2.查找contextElement下的所有指定key=当前chimes key的dom；
+             * 3.查找所有指定key=当前chimes key的dom；
+             * */
+
+            var key=''+ops.chimes.key,
+                chimeElementList = [];
+            if(ops.contextElement){
+                var contextElement=$(ops.contextElement);
+                if(contextElement.length>0){
+                    //如果此次ajax定义了chimes key，则只从标注了key的dom获取风铃配置，否则将不从dom获取
+                    if(key){
+                        contextElement.find("[data-"+AjaxChimes.domAttrPrefix.key+"='"+key+"'][data-"+AjaxChimes.domAttrPrefix.detail+"],[data-"+AjaxChimes.domAttrPrefix.detail+"]:not([data-"+AjaxChimes.domAttrPrefix.key+"])");
+                    }else{
+                        contextElement.find("[data-"+AjaxChimes.domAttrPrefix.detail+"]:not([data-"+AjaxChimes.domAttrPrefix.key+"])");
+                    }
+                    //查找的列表也包含contextElement
+                    chimeElementList.add(contextElement);
+                }
+            }else{
+                chimeElementList = $("[data-"+AjaxChimes.domAttrPrefix.key+"='"+key+"'][data-"+AjaxChimes.domAttrPrefix.detail+"]");
+            }
+            chimeElementList.each(function(i,ele){
+                var elementChimeOptions=AjaxChimes.transitionAttrToChimeOptions($(ele));
+                if(elementChimeOptions){
+                    for(var chimeName in elementChimeOptions){
+                        if(needInstallChimes[chimeName]){
+                            if($.isArray(needInstallChimes[chimeName])){
+                                needInstallChimes[chimeName].push(elementChimeOptions[chimeName]);
+                            }else{
+                                var otherChimeOptions=needInstallChimes[chimeName];
+                                needInstallChimes[chimeName]=[];
+                                needInstallChimes[chimeName].push(otherChimeOptions);
+                                needInstallChimes[chimeName].push(elementChimeOptions[chimeName]);
+                            }
+                        }else{
+                            needInstallChimes[chimeName]=elementChimeOptions[chimeName];
+                        }
+                    }
+                }
+            });
 
             ops.chimeInstances = jqXhr.chimeInstances = ajaxChimes;//将风铃实例集合放置在ajax对象上
             ops.beforeSend = null;
 
-            for (var chimeName in ops.chimes) {
+            for (var chimeName in needInstallChimes) {
                 var chime = $.AjaxChimes[chimeName],
-                    chimeOptions = ops.chimes[chimeName];
-                if (chime) {
-                    var chimeInc = new chime(chimeOptions, jqXhr, ops, orgOps);
-                    chimeInc.install();
-                    chimeInc.run();
-
-                    //将风铃的beforeSend事件插入到队列中
-                    if (typeof ops.beforeSend === "function") {
-                        beforeSendHandles.push(ops.beforeSend);
-                        ops.beforeSend = null;
+                    chimeOptions = needInstallChimes[chimeName];
+                if (chime && chime.enabled) {
+                    var optionsList=[];
+                    if($.isArray(chimeOptions)){
+                        optionsList=chimeOptions;
+                    }else{
+                        optionsList.push(chimeOptions);
                     }
-                    //缓存实例
-                    ajaxChimes[chimeName] = chimeInc;
-                    chime.instances[chimeInc.id] = chimeInc;
+                    $.each(optionsList, function(i, opsItem){
+                        var chimeInc = new chime(opsItem, jqXhr, ops, orgOps);
+                        chimeInc.install();
+                        chimeInc.run();
+
+                        //将风铃的beforeSend事件插入到队列中
+                        if (typeof ops.beforeSend === "function") {
+                            beforeSendHandles.push(ops.beforeSend);
+                            ops.beforeSend = null;
+                        }
+                        //缓存实例
+                        ajaxChimes[chimeName] = ajaxChimes[chimeName] || [];
+                        ajaxChimes[chimeName].push(chimeInc);
+                        chime.instances[chimeInc.id] = chimeInc;
+                    });
+                    
                 } else {
-                    console.warn(pid + "挂件不存在或不可用");
+                    console.warn(chimeName + " 风铃不存在或不可用");
                 }
             }
 
@@ -247,6 +346,20 @@
                     beforeSendCallBacks.fireWith(ops, [jqXhr, ops]);
                 }
             };
+
+            //最后绑定风铃引擎的ajax完成事件：后销毁所有风铃
+            jqXhr.always(function(){
+                $.each(ajaxChimes,function(i,item){
+                    if($.isArray(item)){
+                        $.each(item,function(j,jtem){
+                            jtem.destroy();
+                        });
+                    }else{
+                        item.destroy();
+                    }
+                });
+            });
+            console.log(jqXhr);
         }
     });
 
