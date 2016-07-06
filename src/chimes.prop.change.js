@@ -85,12 +85,11 @@
         },
         install:function(){
             var ops=this.options,
-                ajaxOptions=this.__ajaxOptions,
+                ajaxOptions=this.ajaxOptions,
                 self=this;
             if(ops.element){
                 this.element=$(ops.element);
-                this.__xhr.always(function(){
-                    console.log(self.id);
+                this.xhr.always(function(){
                     self.reductionButton();
                 });
             }
@@ -99,8 +98,10 @@
             this.changeButton();
         },
         uninstall:function(){
-            console.log("uninstall");
             delete this.element;
+        },
+        destroy:function(){
+            this.uninstall();
         }
     });
 }));

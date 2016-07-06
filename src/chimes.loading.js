@@ -20,12 +20,12 @@
         name:"Loading",
         install:function(){
             var ops=this.options,
-                ajaxOptions=this.__ajaxOptions;
+                ajaxOptions=this.ajaxOptions;
             if(ops.element){
                 ajaxOptions.beforeSend=function(){
                     $(ops.element).mLoading(ops);
                 }
-                this.__xhr.always(function(){
+                this.xhr.always(function(){
                     $(ops.element).mLoading("destroy");
                 });
             }

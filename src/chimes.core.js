@@ -26,9 +26,9 @@
         this.id = spec.id || "CHIME" + ("" + Math.random()).replace('.', '');
         this.name = spec.name;
         this.spec = spec;
-        this.__xhr = spec.xhr;
-        this.__ajaxOptions = spec.ajaxOptions;
-        this.__orgAjaxOptions = spec.orgAjaxOptions;
+        this.xhr = spec.xhr;
+        this.ajaxOptions = spec.ajaxOptions;
+        this.orgAjaxOptions = spec.orgAjaxOptions;
         this.options = spec.options;
 
         var __enabled = true,
@@ -66,12 +66,12 @@
             if (!this.isEnabled()) return false;
             if(uninstalled) return false;
             uninstalled=true;
-            this.__xhr = null;
-            this.__ajaxOptions = null;
-            this.__orgAjaxOptions = null;
-            delete this.__xhr;
-            delete this.__ajaxOptions;
-            delete this.__orgAjaxOptions;
+            this.xhr = null;
+            this.ajaxOptions = null;
+            this.orgAjaxOptions = null;
+            delete this.xhr;
+            delete this.ajaxOptions;
+            delete this.orgAjaxOptions;
             var spec = this.spec;
             if(typeof spec.uninstall==="function"){
                 return spec.uninstall.apply(this, arraySlice.call(arguments));
@@ -84,13 +84,13 @@
             if(typeof spec.destroy==="function"){
                 spec.destroy.apply(this, arraySlice.call(arguments));
             }
-            //delete this.___xhr.chimeInstances[this.id];
-            //delete this.__ajaxOptions.chimeInstances[this.id];
+            //delete this._xhr.chimeInstances[this.id];
+            //delete this.ajaxOptions.chimeInstances[this.id];
             delete this.spec;
             delete this.options;
-            delete this.__xhr;
-            delete this.__ajaxOptions;
-            delete this.__orgAjaxOptions;
+            delete this.xhr;
+            delete this.ajaxOptions;
+            delete this.orgAjaxOptions;
             AjaxChimes.destroyChime(this.name,this.id);
         }
         this.run= function () {
@@ -119,24 +119,27 @@
     AjaxChimes.enabled = true;//是否启用风铃系统，说明此处可以集中控制，关闭后，设置的所有风铃将无效
     AjaxChimes.createChime = function (spec) {
         var Constructor = function (chimeOptions, xhr, ajaxOptions, orgAjaxOptions) {
-            $.extend(spec,{
+            Chime.call(this, spec);
+            $.extend(this,{
                 ajaxOptions:ajaxOptions,
                 xhr:xhr,
                 orgAjaxOptions:orgAjaxOptions,
                 options:$.extend(true, {}, Constructor.defaultOptions, chimeOptions)
             });
-            Chime.apply(this,[spec]);
-
             for(var key in spec){
                 if(!this.hasOwnProperty(key)){
-                    this[key]=spec[key];
+                    var value=spec[key];
+                    if(typeof value=="object"){
+                        this[key]=$.extend(true,{},value);
+                    }else{
+                        this[key]=value;
+                    }
                 }
             }
-            
-            this.constructor=Constructor;
+            Constructor.instances[this.id]=this;
         };
+        Constructor.prototype.constructor=Constructor;
         Constructor.instances = {};//已经实例化的风铃
-        Constructor.prototype.constructor = Constructor;
         
         Constructor.enabled=true;
         Constructor.enable=function(){
@@ -294,34 +297,37 @@
             ops.chimeInstances = jqXhr.chimeInstances = ajaxChimes;//将风铃实例集合放置在ajax对象上
             ops.beforeSend = null;
 
+            var gnoreKeys = ["enabled","key"];
             for (var chimeName in needInstallChimes) {
-                var chime = $.AjaxChimes[chimeName],
-                    chimeOptions = needInstallChimes[chimeName];
-                if (chime && chime.enabled) {
-                    var optionsList=[];
-                    if($.isArray(chimeOptions)){
-                        optionsList=chimeOptions;
-                    }else{
-                        optionsList.push(chimeOptions);
-                    }
-                    $.each(optionsList, function(i, opsItem){
-                        var chimeInc = new chime(opsItem, jqXhr, ops, orgOps);
-                        chimeInc.install();
-                        chimeInc.run();
-
-                        //将风铃的beforeSend事件插入到队列中
-                        if (typeof ops.beforeSend === "function") {
-                            beforeSendHandles.push(ops.beforeSend);
-                            ops.beforeSend = null;
+                if(gnoreKeys.indexOf(chimeName)===-1){
+                    var chime = $.AjaxChimes[chimeName],
+                        chimeOptions = needInstallChimes[chimeName];
+                    if (chime && chime.enabled) {
+                        var optionsList=[];
+                        if($.isArray(chimeOptions)){
+                            optionsList=chimeOptions;
+                        }else{
+                            optionsList.push(chimeOptions);
                         }
-                        //缓存实例
-                        ajaxChimes[chimeName] = ajaxChimes[chimeName] || [];
-                        ajaxChimes[chimeName].push(chimeInc);
-                        chime.instances[chimeInc.id] = chimeInc;
-                    });
-                    
-                } else {
-                    console.warn(chimeName + " 风铃不存在或不可用");
+                        $.each(optionsList, function(i, opsItem){
+                            var chimeInc = new chime(opsItem, jqXhr, ops, orgOps);
+                            chimeInc.install();
+                            chimeInc.run();
+
+                            //将风铃的beforeSend事件插入到队列中
+                            if (typeof ops.beforeSend === "function") {
+                                beforeSendHandles.push(ops.beforeSend);
+                                ops.beforeSend = null;
+                            }
+                            //缓存实例
+                            ajaxChimes[chimeName] = ajaxChimes[chimeName] || [];
+                            ajaxChimes[chimeName].push(chimeInc);
+                            chime.instances[chimeInc.id] = chimeInc;
+                        });
+                        
+                    } else {
+                        console.warn(chimeName + " 风铃不存在或不可用");
+                    }
                 }
             }
 
@@ -359,7 +365,6 @@
                     }
                 });
             });
-            console.log(jqXhr);
         }
     });
 
