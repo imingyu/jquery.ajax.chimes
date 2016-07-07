@@ -8,13 +8,16 @@ body {
   border-radius: 0;
 }
 .box-header {
-  color: #fff;
-  background-color: #208d4e;
+  background-color: #fff;
   min-height: 30px;
   margin-bottom: 20px;
+  border: 1px solid #e5e5e5;
+  padding: 0 15px;
+  padding-right: 0;
 }
-.box-header .btn {
-  color: inherit;
+.box-header h4 {
+  margin: 0;
+  line-height: 30px;
 }
 .box-body {
   background: #fff;
@@ -49,10 +52,12 @@ body {
 .list-group {
   border-radius: 0;
   border: none;
+  margin: 0;
 }
 .list-group-item {
   border-left: none;
   border-right: none;
+  border-color: #e5e5e5;
 }
 .list-group-item:first-child {
   border-top-left-radius: 0;
