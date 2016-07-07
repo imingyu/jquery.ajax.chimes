@@ -1,3 +1,7 @@
+/* Name:ajax.chimes.core
+ * Author:mingyuhisoft@163.com
+ * Github:https://github.com/imingyu/jquery.ajax.chimes
+ */
 ;(function (factory) {
     'use strict';
 

@@ -1,3 +1,7 @@
+/* Name:ajax.chimes.prop.change
+ * Author:mingyuhisoft@163.com
+ * Github:https://github.com/imingyu/jquery.ajax.chimes
+ */
 ;(function (factory) {
     'use strict';
 
@@ -55,7 +59,7 @@
     AjaxChimes.createChime({
         name:"PropChange",
         element:null,
-        oldButtonProps:{},
+        oldProps:{},
         getDefaultOptions:function(){
             return {
             };
@@ -66,22 +70,46 @@
                 self=this;
             if(typeof ops.changeProps ==="object"){
                 for(var i in ops.changeProps){
-                    self.oldButtonProps[i]=element.prop(i);
+                    self.oldProps[i]=element.prop(i);
                     element.prop(i,ops.changeProps[i]);
                 }
             }
-            self.oldButtonProps.sid=self.id;
+            self.oldProps.sid=self.id;
         },
-        reductionButton:function(){
+        recovery:function(){
             var ops=this.options,
+                recoveryProps=ops.recoveryProps || {},
+                hasRecovery=[],
                 element=this.element,
                 self=this;
             if(typeof ops.changeProps ==="object"){
-                for(var i in self.oldButtonProps){
-                    element.prop(i,self.oldButtonProps[i]);
-                    delete self.oldButtonProps[i];
+                for(var i in self.oldProps){
+                    if(recoveryProps.hasOwnProperty(i)){
+                        var recoveryValue=recoveryProps[i];
+                        if(typeof recoveryValue ==="function"){
+                            recoveryValue.call(element,self.oldProps[i]);
+                        }else{
+                            element.prop(i, recoveryValue);
+                        }
+                        hasRecovery.push(i);
+                    }else{
+                        element.prop(i,self.oldProps[i]);
+                    }
                 }
             }
+            for(var i in recoveryProps){
+                if(hasRecovery.indexOf(i)===-1){
+                    var recoveryValue=recoveryProps[i];
+                    if(typeof recoveryValue ==="function"){
+                        recoveryValue.call(element);
+                    }else{
+                        element.prop(i, recoveryValue);
+                    }
+                }
+            }
+            self.oldProps=null;
+            hasRecovery.length=0;
+            hasRecovery=null;
         },
         install:function(){
             var ops=this.options,
@@ -90,7 +118,7 @@
             if(ops.element){
                 this.element=$(ops.element);
                 this.xhr.always(function(){
-                    self.reductionButton();
+                    self.recovery();
                 });
             }
         },
@@ -98,7 +126,7 @@
             this.changeButton();
         },
         uninstall:function(){
-            delete this.element;
+            this.element=null;
         },
         destroy:function(){
             this.uninstall();
