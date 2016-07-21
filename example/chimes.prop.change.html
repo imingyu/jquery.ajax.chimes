@@ -25,7 +25,14 @@
                     PropChange:{
                         element:".btn-test",
                         changeProps:{
-                            innerHTML:"加载中..."
+                            innerHTML:"加载中...",
+                            disabled:"disabled"
+                        },
+                        recoveryProps:{
+                            innerHTML:function(oldProps){
+                                this.attr("tt",oldProps);
+                                this.html(oldProps+"哈哈哈");
+                            }
                         }
                     }
                 }

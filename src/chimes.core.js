@@ -130,18 +130,18 @@
                 orgAjaxOptions:orgAjaxOptions,
                 options:$.extend(true, {}, Constructor.defaultOptions, chimeOptions)
             });
+            if(typeof spec.init==="function"){
+                spec.init.call(this);
+            }
             for(var key in spec){
-                if(!this.hasOwnProperty(key)){
+                if(!this.hasOwnProperty(key) && typeof spec[key]==="function"){
                     var value=spec[key];
-                    if(typeof value=="object"){
-                        this[key]=$.extend(true,{},value);
-                    }else{
-                        this[key]=value;
-                    }
+                    this[key]=value;
                 }
             }
             Constructor.instances[this.id]=this;
         };
+        Constructor.displayName = spec.name;
         Constructor.prototype.constructor=Constructor;
         Constructor.instances = {};//已经实例化的风铃
         

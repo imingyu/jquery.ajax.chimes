@@ -58,8 +58,10 @@
 
     AjaxChimes.createChime({
         name:"PropChange",
-        element:null,
-        oldProps:{},
+        init:function () {
+            this.element = null;
+            this.oldProps = {};
+        },
         getDefaultOptions:function(){
             return {
             };
