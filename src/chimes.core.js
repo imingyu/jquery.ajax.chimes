@@ -37,8 +37,7 @@
 
         var __enabled = true,
             installed=false,
-            uninstalled=false,
-            destroyed=false;
+            uninstalled=false;
         this.isEnabled = function () {
             return __enabled;
         };
@@ -77,26 +76,11 @@
             delete this.ajaxOptions;
             delete this.orgAjaxOptions;
             var spec = this.spec;
+            AjaxChimes.destroyChime(this.name,this.id);
             if(typeof spec.uninstall==="function"){
                 return spec.uninstall.apply(this, arraySlice.call(arguments));
             }
         },
-        this.destroy= function () {
-            if(destroyed) return false;
-            destroyed=true;
-            var spec = this.spec;
-            if(typeof spec.destroy==="function"){
-                spec.destroy.apply(this, arraySlice.call(arguments));
-            }
-            //delete this._xhr.chimeInstances[this.id];
-            //delete this.ajaxOptions.chimeInstances[this.id];
-            delete this.spec;
-            delete this.options;
-            delete this.xhr;
-            delete this.ajaxOptions;
-            delete this.orgAjaxOptions;
-            AjaxChimes.destroyChime(this.name,this.id);
-        }
         this.run= function () {
             if (!this.isEnabled() || !this.constructor.enabled){
                 console.warn("风铃："+this.name+"已被禁用！");
@@ -104,10 +88,6 @@
             }
             if (uninstalled){
                 console.warn("风铃："+this.name+"已被卸载！");
-                return false;
-            }
-            if (destroyed){
-                console.warn("风铃："+this.name+"已被销毁！");
                 return false;
             }
             var spec = this.spec;
@@ -357,15 +337,15 @@
                 }
             };
 
-            //最后绑定风铃引擎的ajax完成事件：后销毁所有风铃
+            //最后绑定风铃引擎的ajax完成事件：后卸载所有风铃
             jqXhr.always(function(){
                 $.each(ajaxChimes,function(i,item){
                     if($.isArray(item)){
                         $.each(item,function(j,jtem){
-                            jtem.destroy();
+                            jtem.uninstall();
                         });
                     }else{
-                        item.destroy();
+                        item.uninstall();
                     }
                 });
             });

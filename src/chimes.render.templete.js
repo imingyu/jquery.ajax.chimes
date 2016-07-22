@@ -19,7 +19,9 @@
 
     var RenderTemplete = AjaxChimes.createChime({
         name:"RenderTemplete",
-        element: null,
+        init:function () {
+            this.element=null;
+        },
         getDefaultOptions:function () {
             return {
                 append:false//是否以append方式将渲染后的内容放置在dom中
@@ -71,9 +73,6 @@
             });
         },
         uninstall:function(){
-            this.element=null;
-        },
-        destroy:function(){
             this.element=null;
         }
     });

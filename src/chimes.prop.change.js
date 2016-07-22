@@ -129,9 +129,6 @@
         },
         uninstall:function(){
             this.element=null;
-        },
-        destroy:function(){
-            this.uninstall();
         }
     });
 }));
