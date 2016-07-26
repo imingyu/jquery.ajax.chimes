@@ -1,22 +1,22 @@
 var config = {},
-    siteConfig=require("./config"),
+    siteConfig = require("./config"),
     _ = require("lodash");
 
 _.extend(config, {
-    entry:{
-        "dist/a":"./src/a.js"
+    entry: {
+        "dist/a": "./src/a.js"
     },
-    output:{
-        path:process.cwd(),
-        filename:'[name].js'
+    output: {
+        path: process.cwd(),
+        filename: '[name].js'
     },
     module: {
         //加载器配置
         loaders: [
             { test: /\.css$/, loader: 'style!css' },
             { test: /\.js$/, loader: 'babel' },
-            { test: /\.scss$/, loader: 'style!css!sass?sourceMap'},
-            { test: /\.(png|jpg)$/, loader: 'file?limit=8192'}
+            { test: /\.scss$/, loader: 'style!css!sass?sourceMap' },
+            { test: /\.(png|jpg)$/, loader: 'file?limit=8192' }
         ]
     },
     resolve: {
@@ -26,13 +26,14 @@ _.extend(config, {
         //extensions: ['', '.js', '.json', '.scss'],
         //模块别名定义，方便后续直接引用别名，无须多写长长的地址
         alias: {
-            jquery : 'jquery/dist/jquery.js',
+            jquery: 'jquery/dist/jquery.js',
         }
     }
 });
 
-if(siteConfig.env==="dev"){
-    require("./webpack.user")(config);
+if (siteConfig.env === "dev") {
+    require("./webpack.dev")(config);
+}else if(siteConfig.env === "pro"){
+    require("./webpack.webpack.product")(config);
 }
-
 module.exports = config;
