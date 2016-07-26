@@ -1,5 +1,5 @@
 {
-  "name": "jquery.ajax.chimes",
+  "name": "jquery.ajax.chimes docs",
   "version": "0.1.0",
   "description": "ajax上的风铃",
   "main": "index.js",
@@ -15,11 +15,6 @@
     "url": "git+https://github.com/imingyu/jquery.ajax.chimes.git"
   },
   "keywords": [
-    "jquery-plugin",
-    "ajax",
-    "jquery-ajax-chimes",
-    "chime",
-    "ajax-manager"
   ],
   "author": "mingyuhisoft@163.com",
   "license": "ISC",
