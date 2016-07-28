@@ -15,9 +15,12 @@ module.exports=function(webpackConfig){
             entry[key] = hotModule.concat(entry[key]);
         } else {
             var arr = [];
-            arr = hotModule.concat(arr);
-            arr.push(value);
-            entry[key] = arr;
+                arr = hotModule.concat(arr);
+                arr.push(value);
+                entry[key] = arr;
+            if(value.indexOf("libs.js")===-1){
+                
+            }
         }
     });
     if (!webpackConfig.devServer) {

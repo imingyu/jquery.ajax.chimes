@@ -1,22 +1,28 @@
 var config = {},
     siteConfig = require("./config"),
-    _ = require("lodash");
+    webpack=require("webpack"),
+    _ = require("lodash"),
+    ExtractTextPlugin=require("extract-text-webpack-plugin");
 
 _.extend(config, {
     entry: {
-        "dist/a": "./src/a.js"
+        "lib": "./src/scripts/libs.js",
+        "a": "./src/a.js"
     },
     output: {
-        path: process.cwd(),
-        filename: '[name].js'
+        path: "./dist",
+        filename: 'scripts/[name].js',
+        chunkFilename:'scripts/chunk-[chunkname].js'
     },
     module: {
         //加载器配置
         loaders: [
-            { test: /\.css$/, loader: 'style!css' },
+            { test: /\.css$/, loader: ExtractTextPlugin.extract("style-loader", "css-loader") },
             { test: /\.js$/, loader: 'babel' },
-            { test: /\.scss$/, loader: 'style!css!sass?sourceMap' },
-            { test: /\.(png|jpg)$/, loader: 'file?limit=8192' }
+            { test: /\.scss$/, loader: ExtractTextPlugin.extract("style-loader", "css-loader!sass-loader") },
+            { test: /\.(gif|jpg|png)\??.*$/, loader: 'url-loader?limit=10000&name=images/[name].[ext]' },
+            { test: /\.(woff|eot|ttf)\??.*$/, loader: 'url-loader?limit=10000&name=fonts/[name].[ext]' },
+            { test: /\.(svg)\??.*$/, loader: 'url-loader?limit=10000&name=svg/[name].[ext]' }
         ]
     },
     resolve: {
@@ -26,14 +32,22 @@ _.extend(config, {
         //extensions: ['', '.js', '.json', '.scss'],
         //模块别名定义，方便后续直接引用别名，无须多写长长的地址
         alias: {
-            jquery: 'jquery/dist/jquery.js',
         }
-    }
+    },
+    externals:{
+        jquery: 'window.jquery',
+        "$": 'window.jquery',
+        "jQuery": 'window.jquery',
+        angular: 'window.angular'
+    },
+    plugins:[
+        new ExtractTextPlugin("styles/[name].css")
+    ]
 });
 
 if (siteConfig.env === "dev") {
     require("./webpack.dev")(config);
 }else if(siteConfig.env === "pro"){
-    require("./webpack.webpack.product")(config);
+    require("./webpack.product")(config);
 }
 module.exports = config;
